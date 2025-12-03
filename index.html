@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival Map: Team Racing (No Icons)</title>
+    <title>Survival Map: Teacher Control</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -21,7 +21,7 @@
 
         /* --- SIDEBAR --- */
         #sidebar {
-            width: 300px;
+            width: 320px;
             background: #2d3748;
             padding: 15px;
             display: flex;
@@ -75,7 +75,6 @@
             line-height: 1.2;
             padding: 2px;
         }
-        /* No icons style needed anymore */
         
         .building:hover { transform: scale(1.02); z-index: 5; }
 
@@ -94,7 +93,6 @@
             font-size: 0 !important;
             color: transparent !important;
         }
-        /* Since there are no icons, blind mode is just colored boxes */
 
         /* Road Names */
         .road-label {
@@ -142,7 +140,18 @@
         /* --- UI ELEMENTS --- */
         .control-group { margin-bottom: 1rem; background: #4a5568; padding: 12px; border-radius: 10px; border: 1px solid #718096; }
         .scoreboard { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-        .team-box { flex: 1; background: #1a202c; border-radius: 8px; padding: 8px; text-align: center; border: 2px solid transparent; opacity: 0.5; transition: all 0.3s; }
+        
+        .team-box { 
+            flex: 1; 
+            background: #1a202c; 
+            border-radius: 8px; 
+            padding: 8px; 
+            text-align: center; 
+            border: 2px solid transparent; 
+            opacity: 0.5; 
+            transition: all 0.3s;
+            position: relative; /* For buttons */
+        }
         
         .team-box.team-a.active { opacity: 1; transform: scale(1.05); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
         .team-a .team-name { color: #93c5fd; }
@@ -150,13 +159,42 @@
         .team-b .team-name { color: #f9a8d4; }
 
         .team-name { font-family: 'Press Start 2P'; font-size: 0.6rem; margin-bottom: 4px; }
-        .team-score { font-family: 'Press Start 2P'; font-size: 1.2rem; color: white; }
+        .team-score { font-family: 'Press Start 2P'; font-size: 1.5rem; color: white; margin: 5px 0; }
         
+        /* Manual Score Controls */
+        .score-ctrl {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .score-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .btn-plus { background: #48bb78; color: white; }
+        .btn-plus:hover { background: #38a169; }
+        .btn-minus { background: #f56565; color: white; }
+        .btn-minus:hover { background: #e53e3e; }
+
         .mission-select { width: 100%; background: #edf2f7; color: #1a202c; padding: 10px; border-radius: 6px; font-weight: bold; border: 2px solid #cbd5e0; cursor: pointer; font-size: 0.9rem; }
+        
         .big-btn { width: 100%; padding: 12px; border-radius: 8px; font-family: 'Press Start 2P', cursive; text-transform: uppercase; cursor: pointer; transition: all 0.1s; border-bottom: 4px solid rgba(0,0,0,0.2); font-size: 0.8rem; text-align: center; }
+        .big-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: transparent; }
+        
         .btn-confirm { background: #e53e3e; color: white; border-color: #9b2c2c; }
-        .btn-confirm:hover { background: #c53030; transform: translateY(-2px); }
-        .btn-confirm:active { transform: translateY(2px); border-bottom-width: 0; margin-top: 2px; }
+        .btn-confirm:hover:not(:disabled) { background: #c53030; transform: translateY(-2px); }
+        .btn-confirm:active:not(:disabled) { transform: translateY(2px); border-bottom-width: 0; margin-top: 2px; }
+        
         .btn-reset { background: #4299e1; color: white; border-color: #2b6cb0; margin-top: 8px; font-size: 0.7rem; padding: 8px;}
 
         /* Timer Styling */
@@ -171,6 +209,15 @@
         @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
         .building.highlight-debug { border: 3px dashed red !important; background: rgba(255,0,0,0.2) !important; }
+        
+        /* Start Button Animation */
+        @keyframes pulse-green {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+        }
+        .btn-start-pulse {
+            animation: pulse-green 2s infinite;
+        }
     </style>
 </head>
 <body>
@@ -187,22 +234,39 @@
                 <button onclick="resetScores()" class="text-xs text-red-400 hover:text-red-300 underline">Reset Match</button>
             </h3>
             <div class="scoreboard">
+                <!-- TEAM A -->
                 <div id="box-a" class="team-box team-a active">
                     <div class="team-name">TEAM A</div>
+                    <div class="text-xs text-blue-300 mb-1"><i class="fas fa-user-astronaut"></i></div>
                     <div id="score-a" class="team-score">0</div>
-                    <div class="text-xs text-blue-300 mt-1"><i class="fas fa-user-astronaut"></i></div>
+                    <!-- Manual Controls -->
+                    <div class="score-ctrl">
+                        <button onclick="adjustScore('A', -1)" class="score-btn btn-minus"><i class="fas fa-minus"></i></button>
+                        <button onclick="adjustScore('A', 1)" class="score-btn btn-plus"><i class="fas fa-plus"></i></button>
+                    </div>
                 </div>
+                <!-- TEAM B -->
                 <div id="box-b" class="team-box team-b">
                     <div class="team-name">TEAM B</div>
+                    <div class="text-xs text-pink-300 mb-1"><i class="fas fa-user-ninja"></i></div>
                     <div id="score-b" class="team-score">0</div>
-                    <div class="text-xs text-pink-300 mt-1"><i class="fas fa-user-ninja"></i></div>
+                    <!-- Manual Controls -->
+                    <div class="score-ctrl">
+                        <button onclick="adjustScore('B', -1)" class="score-btn btn-minus"><i class="fas fa-minus"></i></button>
+                        <button onclick="adjustScore('B', 1)" class="score-btn btn-plus"><i class="fas fa-plus"></i></button>
+                    </div>
                 </div>
             </div>
             
-            <div class="flex justify-between items-center mt-2 bg-gray-800 p-2 rounded">
+            <div class="flex justify-between items-center mt-2 bg-gray-800 p-2 rounded mb-2">
                 <span class="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300" id="turn-indicator">Turn: TEAM A</span>
                 <div id="timer-display" class="text-lg">02:00</div>
             </div>
+
+            <!-- NEW START TURN BUTTON -->
+            <button onclick="startTurn()" id="start-turn-btn" class="w-full bg-green-600 text-white font-bold py-2 rounded text-sm hover:bg-green-500 btn-start-pulse border-b-4 border-green-800 active:border-b-0 active:mt-1">
+                ▶ START TURN
+            </button>
         </div>
 
         <div class="control-group">
@@ -241,9 +305,10 @@
                 </optgroup>
             </select>
             
-            <button onclick="checkLocation()" class="big-btn btn-confirm">
+            <button onclick="checkLocation()" id="confirm-btn" class="big-btn btn-confirm" disabled>
                 I AM HERE!
             </button>
+            <div class="text-xs text-center text-gray-500 mt-1" id="locked-msg">(Start turn to move)</div>
             
             <div class="grid grid-cols-2 gap-2 mt-3">
                 <button onclick="resetPosition()" class="bg-blue-600 text-white text-xs font-bold py-2 rounded hover:bg-blue-500">
@@ -387,7 +452,7 @@
                 <p id="game-over-msg" class="text-xl text-gray-300 mb-8 text-center px-4 max-w-lg">Oh no! You have been kidnapped and taken to Cambodia!</p>
                 <div class="flex gap-4">
                      <button onclick="retryTurn()" class="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-500">Retry</button>
-                    <button onclick="endTurn(false)" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 border-b-4 border-red-800">End Turn (Next Team)</button>
+                    <button onclick="endTurn()" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 border-b-4 border-red-800">End Turn (Next Team)</button>
                 </div>
             </div>
 
@@ -395,8 +460,8 @@
             <div id="win-screen" class="overlay-screen">
                 <div class="text-9xl text-yellow-300 mb-4 animate-pulse"><i class="fas fa-star"></i></div>
                 <h2 class="text-5xl font-bold text-white font-['Press_Start_2P'] mb-4">CORRECT!</h2>
-                <p class="text-2xl text-white mb-8">Point for <span id="winner-name">TEAM</span>!</p>
-                <button onclick="endTurn(true)" class="bg-green-600 text-white font-bold py-4 px-8 rounded-full hover:bg-green-500 shadow-lg text-xl border-b-4 border-green-800 transition transform hover:scale-105">Collect Point & Next Turn</button>
+                <p class="text-2xl text-white mb-8">Good job!</p>
+                <button onclick="endTurn()" class="bg-green-600 text-white font-bold py-4 px-8 rounded-full hover:bg-green-500 shadow-lg text-xl border-b-4 border-green-800 transition transform hover:scale-105">Finish Turn (Next Team)</button>
             </div>
         </div>
     </div>
@@ -443,12 +508,22 @@
         let blindMode = false;
         let animationFrameId;
         
+        // Turn State
+        let isTurnActive = false;
+        
         // Timer Variables
         const TURN_TIME = 120; // 2 minutes
         let timeLeft = TURN_TIME;
         let timerInterval = null;
 
         // --- CORE FUNCTIONS ---
+        function startTurn() {
+            if (isTurnActive) return;
+            isTurnActive = true;
+            startTimer();
+            updateUIState();
+        }
+
         function startTimer() {
             stopTimer(); // Clear existing
             timeLeft = TURN_TIME;
@@ -490,6 +565,24 @@
             document.getElementById('monster-screen').classList.add('active');
         }
 
+        function updateUIState() {
+            const startBtn = document.getElementById('start-turn-btn');
+            const confirmBtn = document.getElementById('confirm-btn');
+            const lockedMsg = document.getElementById('locked-msg');
+            
+            if (isTurnActive) {
+                startBtn.classList.add('hidden');
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                lockedMsg.classList.add('hidden');
+            } else {
+                startBtn.classList.remove('hidden');
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                lockedMsg.classList.remove('hidden');
+            }
+        }
+
         function updateScoreboardUI() {
             document.getElementById('score-a').innerText = scores.A;
             document.getElementById('score-b').innerText = scores.B;
@@ -521,27 +614,41 @@
             }
         }
 
-        function endTurn(isWin) {
+        function adjustScore(team, amount) {
+            scores[team] += amount;
+            if (scores[team] < 0) scores[team] = 0; // Prevent negative scores? Optional
+            updateScoreboardUI();
+        }
+
+        function endTurn() {
             stopTimer();
+            isTurnActive = false;
             document.getElementById('monster-screen').classList.remove('active');
             document.getElementById('win-screen').classList.remove('active');
             
-            if (isWin) scores[currentTurn]++;
-            
+            // Switch Turn - Position is automatically preserved in teamA/teamB objects
             currentTurn = currentTurn === 'A' ? 'B' : 'A';
             
             updateScoreboardUI();
-            startTimer(); // Restart timer for next team
+            updateUIState();
+            // Reset timer display for next turn
+            timeLeft = TURN_TIME;
+            updateTimerDisplay();
         }
 
         function retryTurn() {
             stopTimer();
+            // Keep turn active? Or require restart? Let's reset to start state for clarity
+            isTurnActive = false;
             document.getElementById('monster-screen').classList.remove('active');
-            startTimer();
+            updateUIState();
+            timeLeft = TURN_TIME;
+            updateTimerDisplay();
         }
 
         function resetScores() {
             stopTimer();
+            isTurnActive = false;
             scores.A = 0; scores.B = 0; 
             currentTurn = 'A';
             
@@ -550,10 +657,13 @@
             updatePlayerVisuals();
             
             updateScoreboardUI(); 
-            startTimer();
+            updateUIState();
+            timeLeft = TURN_TIME;
+            updateTimerDisplay();
         }
 
         function resetPosition() {
+            // Only resets the ACTIVE team
             let activeTeam = currentTurn === 'A' ? teamA : teamB;
             activeTeam.x = currentTurn === 'A' ? 50 : 53;
             activeTeam.y = 90;
@@ -568,6 +678,12 @@
         }
 
         function gameLoop() {
+            // Only allow movement if turn is active
+            if (!isTurnActive) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
             let activeTeam = currentTurn === 'A' ? teamA : teamB;
             let moved = false;
             
@@ -587,6 +703,8 @@
         }
 
         function checkLocation() {
+            if (!isTurnActive) return;
+
             const targetName = document.getElementById('target-select').value;
             const zone = locations[targetName];
             
@@ -650,7 +768,9 @@
         // --- INPUT ---
         document.addEventListener('keydown', (e) => {
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                e.preventDefault(); keysPressed[e.key] = true;
+                e.preventDefault(); 
+                // Only register key if turn is active
+                if (isTurnActive) keysPressed[e.key] = true;
             }
             if (e.key === 'Enter') checkLocation();
         });
@@ -669,7 +789,7 @@
         // Init
         updatePlayerVisuals();
         updateScoreboardUI();
-        startTimer(); // Start timer initially
+        updateUIState();
         requestAnimationFrame(gameLoop);
 
     </script>
