@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival Map: Team Racing</title>
+    <title>Survival Map: Team Racing (No Icons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -67,14 +67,16 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            font-size: 0.9vw;
-            font-weight: bold;
+            font-size: 1vw; /* Text slightly bigger since no icons */
+            font-weight: 800; /* Bolder text */
             color: #2d3748;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
             transition: transform 0.2s;
             line-height: 1.2;
+            padding: 2px;
         }
-        .building i { font-size: 1.8vw; margin-bottom: 2px; opacity: 0.7; }
+        /* No icons style needed anymore */
+        
         .building:hover { transform: scale(1.02); z-index: 5; }
 
         /* Building Colors */
@@ -85,7 +87,14 @@
         .b-industrial { background: #f3f4f6; border-color: #4b5563; }
         .b-transport { background: #fff; border-color: #374151; }
 
-        .label-sm { font-size: 0.7vw; }
+        .label-sm { font-size: 0.8vw; }
+
+        /* BLIND MODE STYLES (Hide Text Only) */
+        .blind-mode .building {
+            font-size: 0 !important;
+            color: transparent !important;
+        }
+        /* Since there are no icons, blind mode is just colored boxes */
 
         /* Road Names */
         .road-label {
@@ -109,18 +118,11 @@
         }
         .player-token i { font-size: 3.6vw; color: white; }
         
-        /* Team A Specifics */
         #player-a { background-color: #2563eb; box-shadow: 0 0 15px #2563eb; }
-        
-        /* Team B Specifics */
         #player-b { background-color: #db2777; box-shadow: 0 0 15px #db2777; }
 
-        /* Inactive State */
         .player-token.inactive {
-            opacity: 0.6;
-            filter: grayscale(0.8);
-            z-index: 40;
-            transform: scale(0.9);
+            opacity: 0.6; filter: grayscale(0.8); z-index: 40; transform: scale(0.9);
         }
 
         /* --- OVERLAYS --- */
@@ -142,11 +144,8 @@
         .scoreboard { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
         .team-box { flex: 1; background: #1a202c; border-radius: 8px; padding: 8px; text-align: center; border: 2px solid transparent; opacity: 0.5; transition: all 0.3s; }
         
-        /* Team A Active UI */
         .team-box.team-a.active { opacity: 1; transform: scale(1.05); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
         .team-a .team-name { color: #93c5fd; }
-        
-        /* Team B Active UI */
         .team-box.team-b.active { opacity: 1; transform: scale(1.05); border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); }
         .team-b .team-name { color: #f9a8d4; }
 
@@ -163,21 +162,14 @@
         /* Timer Styling */
         #timer-display {
             font-family: 'Press Start 2P', cursive;
-            color: #4ade80; /* Green text */
-            text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+            color: #4ade80; text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
         }
         #timer-display.low-time {
-            color: #ef4444; /* Red text */
-            text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+            color: #ef4444; text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
             animation: pulse-red 1s infinite;
         }
-        @keyframes pulse-red {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
+        @keyframes pulse-red { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* Debug Highlight */
         .building.highlight-debug { border: 3px dashed red !important; background: rgba(255,0,0,0.2) !important; }
     </style>
 </head>
@@ -253,11 +245,16 @@
                 I AM HERE!
             </button>
             
-            <button onclick="resetPosition()" class="big-btn btn-reset">
-                Reset Current Team to Start
-            </button>
+            <div class="grid grid-cols-2 gap-2 mt-3">
+                <button onclick="resetPosition()" class="bg-blue-600 text-white text-xs font-bold py-2 rounded hover:bg-blue-500">
+                    <i class="fas fa-undo mr-1"></i> Reset Pos
+                </button>
+                <button onclick="toggleBlindMode()" id="blind-btn" class="bg-gray-600 text-white text-xs font-bold py-2 rounded hover:bg-gray-500">
+                    👁️ Hide Labels
+                </button>
+            </div>
             
-            <div class="mt-3 text-center">
+            <div class="mt-2 text-center">
                  <button onclick="toggleDebug()" id="debug-btn" class="text-xs text-gray-500 hover:text-white underline">Toggle Debug Mode</button>
             </div>
         </div>
@@ -278,64 +275,64 @@
             <div class="road-label" style="top: 32%; left: 50%;">Central Street</div>
             <div class="road-label" style="top: 61%; left: 35%;">Second Street</div>
 
-            <!-- --- BUILDINGS --- -->
+            <!-- --- BUILDINGS (ICONS REMOVED) --- -->
             <!-- Left Side -->
             <div class="building b-industrial" style="top: 10%; left: 3%; width: 7%; height: 80%;" title="factory">
-                <i class="fas fa-industry"></i><br>Factory
+                Factory
             </div>
             <div class="building b-transport" style="top: 10%; left: 11%; width: 6%; height: 80%;" title="station">
-                <i class="fas fa-train"></i><br>Station
+                Station
             </div>
             <div style="position:absolute; top:35%; left:17%; font-size:0.7vw; color:#4b5563; font-weight:bold; transform:rotate(-90deg);">TAXI</div>
 
             <!-- Top Row -->
             <div class="building b-public" style="top: 5%; left: 24%; width: 10%; height: 23%; align-items: flex-start; padding:5px; background:#fff0e6;" title="library_block">
                 <div class="building" style="top: 25%; left: 10%; width: 40%; height: 50%; border:none; background:transparent; box-shadow:none;" title="library">
-                    <i class="fas fa-book text-red-700"></i><br>Library
+                    Library
                 </div>
                 <div class="building" style="top: 5%; left: 55%; width: 40%; height: 30%; border:1px solid #ccc; background:#fff;" title="cafe">
-                    <i class="fas fa-coffee"></i><br>Cafe
+                    Cafe
                 </div>
                 <div style="position:absolute; bottom:15%; right:10%; font-size:0.8vw; color:#4b5563;" title="main_square">Main Square</div>
             </div>
             <div class="building b-public" style="top: 5%; left: 53%; width: 11%; height: 23%;" title="government_building">
-                <i class="fas fa-landmark text-red-800"></i><br>Gov.<br>Building
+                Gov.<br>Building
             </div>
             <div class="building b-service" style="top: 5%; left: 64%; width: 10%; height: 23%;" title="post_office">
-                <i class="fas fa-envelope text-blue-700"></i><br>Post<br>Office
+                Post<br>Office
             </div>
             <div class="building b-commercial" style="top: 5%; left: 74%; width: 7%; height: 23%;" title="hotel">
-                <i class="fas fa-hotel text-yellow-600"></i><br>Hotel
+                Hotel
             </div>
             <div class="building b-commercial" style="top: 5%; left: 81%; width: 11%; height: 23%;" title="theatre">
-                <i class="fas fa-masks-theater"></i><br>Theatre
+                Theatre
             </div>
 
             <!-- Middle Row -->
             <div style="position: absolute; top: 38%; left: 24%; width: 27%; height: 20%;">
                 <div class="building b-commercial" style="top: 0; left: 0; width: 40%; height: 50%;" title="department_store">
-                    <i class="fas fa-shirt"></i><br><span class="label-sm">Dept. Store</span>
+                    <span class="label-sm">Dept. Store</span>
                 </div>
                 <div class="building b-commercial" style="top: 50%; left: 0; width: 40%; height: 50%;" title="cinema">
-                    <i class="fas fa-film"></i><br>Cinema
+                    Cinema
                 </div>
                 <div class="building b-commercial" style="top: 0; left: 40%; width: 60%; height: 25%;" title="supermarket">
-                    <i class="fas fa-cart-shopping"></i><br><span class="label-sm">Supermarket</span>
+                    <span class="label-sm">Supermarket</span>
                 </div>
                 <div class="building" style="top: 25%; left: 40%; width: 60%; height: 40%; background:#d1d5db;" title="car_park">
-                    <i class="fas fa-square-parking"></i><br>Car Park
+                    Car Park
                 </div>
                 <div class="building b-service" style="top: 65%; left: 40%; width: 30%; height: 35%;" title="bank">
-                    <i class="fas fa-money-bill"></i><br><span class="label-sm">Bank</span>
+                    <span class="label-sm">Bank</span>
                 </div>
                 <div class="building b-commercial" style="top: 65%; left: 70%; width: 30%; height: 35%;" title="book_shop">
-                    <i class="fas fa-book-open"></i><br><span class="label-sm">Book Shop</span>
+                    <span class="label-sm">Book Shop</span>
                 </div>
             </div>
 
             <div style="position: absolute; top: 38%; left: 58%; width: 22%; height: 20%;">
                 <div class="building b-commercial" style="top: 25%; left: 0; width: 70%; height: 75%;" title="shopping_centre">
-                    <i class="fas fa-bag-shopping"></i><br>Shopping<br>Centre
+                    Shopping<br>Centre
                 </div>
                 <div class="building b-commercial" style="top: 0; left: 0; width: 25%; height: 25%;" title="sc_part1"></div>
                 <div class="building b-commercial" style="top: 0; left: 25%; width: 20%; height: 25%;" title="sc_part2"></div>
@@ -353,12 +350,8 @@
             <!-- Bottom Row -->
             <div class="building b-park" style="top: 66%; left: 24%; width: 27%; height: 32%; align-items: flex-start; padding: 10px;" title="central_park">
                 <div style="width: 100%; text-align: center; margin-bottom: 5px; font-weight:bold;">Central Park</div>
-                <i class="fas fa-tree" style="position: absolute; top: 10%; left: 10%;"></i>
-                <i class="fas fa-tree" style="position: absolute; top: 10%; right: 10%;"></i>
-                <i class="fas fa-tree" style="position: absolute; bottom: 10%; left: 10%;"></i>
-                <i class="fas fa-tree" style="position: absolute; bottom: 10%; right: 10%;"></i>
                 <div class="building b-public" style="position: relative; top: 10%; left: 15%; width: 70%; height: 40%; border-color: #be185d;" title="museum">
-                    <i class="fas fa-building-columns"></i><br>Museum
+                    Museum
                 </div>
             </div>
 
@@ -369,14 +362,14 @@
             </div>
 
             <div class="building b-park" style="top: 38%; left: 84%; width: 15%; height: 28%;" title="green_park">
-                <i class="fas fa-tree text-green-700"></i><br>Green<br>Park
+                Green<br>Park
             </div>
             <div style="position: absolute; top: 68%; left: 84%; width: 15%; height: 30%; border: 2px solid #4a5568; background: #fef3c7;">
                 <div class="building b-service" style="top: 0; left: 0; width: 100%; height: 30%; background: #bae6fd; border:none; border-bottom: 1px solid #ccc;" title="swimming_pool">
                     <span class="label-sm">Swimming Pool</span>
                 </div>
                 <div class="building b-commercial" style="top: 30%; left: 0; width: 100%; height: 50%; background: transparent; border:none; box-shadow: none;" title="sports_centre">
-                    <i class="fas fa-basketball text-orange-600"></i><br><span class="label-sm">Sports Centre</span>
+                    <span class="label-sm">Sports Centre</span>
                 </div>
                 <div class="building" style="bottom: 0; left: 0; width: 100%; height: 20%; background: #e5e7eb; border-top: 2px solid #9ca3af; font-size: 0.7vw;" title="bus_stop">
                     Bus Stop
@@ -447,6 +440,7 @@
         let keysPressed = {};
         let scores = { A: 0, B: 0 };
         let debugMode = false;
+        let blindMode = false;
         let animationFrameId;
         
         // Timer Variables
@@ -541,8 +535,6 @@
         }
 
         function retryTurn() {
-            // Restart timer for retry? Or just resume? Usually retry resets the attempt.
-            // Let's reset the timer to be fair (or maybe half time?). For simplicity, reset full time.
             stopTimer();
             document.getElementById('monster-screen').classList.remove('active');
             startTimer();
@@ -635,6 +627,24 @@
             const btn = document.getElementById('debug-btn');
             btn.innerText = debugMode ? "Debug: ON" : "Toggle Debug Mode";
             btn.style.color = debugMode ? "#86efac" : "#6b7280";
+        }
+
+        function toggleBlindMode() {
+            blindMode = !blindMode;
+            const container = document.getElementById('game-container');
+            const btn = document.getElementById('blind-btn');
+            
+            if (blindMode) {
+                container.classList.add('blind-mode');
+                btn.classList.replace('bg-gray-600', 'bg-purple-600');
+                btn.classList.replace('hover:bg-gray-500', 'hover:bg-purple-500');
+                btn.innerHTML = '👁️ Show Labels';
+            } else {
+                container.classList.remove('blind-mode');
+                btn.classList.replace('bg-purple-600', 'bg-gray-600');
+                btn.classList.replace('hover:bg-purple-500', 'hover:bg-gray-500');
+                btn.innerHTML = '👁️ Hide Labels';
+            }
         }
 
         // --- INPUT ---
