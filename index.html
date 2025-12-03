@@ -160,6 +160,23 @@
         .btn-confirm:active { transform: translateY(2px); border-bottom-width: 0; margin-top: 2px; }
         .btn-reset { background: #4299e1; color: white; border-color: #2b6cb0; margin-top: 8px; font-size: 0.7rem; padding: 8px;}
 
+        /* Timer Styling */
+        #timer-display {
+            font-family: 'Press Start 2P', cursive;
+            color: #4ade80; /* Green text */
+            text-shadow: 0 0 5px rgba(74, 222, 128, 0.5);
+        }
+        #timer-display.low-time {
+            color: #ef4444; /* Red text */
+            text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+            animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
         /* Debug Highlight */
         .building.highlight-debug { border: 3px dashed red !important; background: rgba(255,0,0,0.2) !important; }
     </style>
@@ -189,8 +206,10 @@
                     <div class="text-xs text-pink-300 mt-1"><i class="fas fa-user-ninja"></i></div>
                 </div>
             </div>
-            <div class="text-center mt-1">
+            
+            <div class="flex justify-between items-center mt-2 bg-gray-800 p-2 rounded">
                 <span class="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300" id="turn-indicator">Turn: TEAM A</span>
+                <div id="timer-display" class="text-lg">02:00</div>
             </div>
         </div>
 
@@ -372,7 +391,7 @@
             <div id="monster-screen" class="overlay-screen">
                 <div class="text-9xl text-red-500 mb-4 animate-bounce"><i class="fas fa-skull-crossbones"></i></div>
                 <h2 class="text-4xl font-bold text-red-500 font-['Press_Start_2P'] mb-4 text-center leading-relaxed">GAME OVER</h2>
-                <p class="text-xl text-gray-300 mb-8 text-center px-4 max-w-lg">Oh no! You have been kidnapped and taken to Cambodia!</p>
+                <p id="game-over-msg" class="text-xl text-gray-300 mb-8 text-center px-4 max-w-lg">Oh no! You have been kidnapped and taken to Cambodia!</p>
                 <div class="flex gap-4">
                      <button onclick="retryTurn()" class="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-500">Retry</button>
                     <button onclick="endTurn(false)" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 border-b-4 border-red-800">End Turn (Next Team)</button>
@@ -420,9 +439,8 @@
         };
 
         // --- STATE ---
-        // Separate state for each team
         let teamA = { x: 50, y: 90, el: document.getElementById('player-a') };
-        let teamB = { x: 53, y: 90, el: document.getElementById('player-b') }; // Offset start
+        let teamB = { x: 53, y: 90, el: document.getElementById('player-b') };
         
         let currentTurn = 'A';
         const speed = 0.5;
@@ -430,8 +448,54 @@
         let scores = { A: 0, B: 0 };
         let debugMode = false;
         let animationFrameId;
+        
+        // Timer Variables
+        const TURN_TIME = 120; // 2 minutes
+        let timeLeft = TURN_TIME;
+        let timerInterval = null;
 
         // --- CORE FUNCTIONS ---
+        function startTimer() {
+            stopTimer(); // Clear existing
+            timeLeft = TURN_TIME;
+            updateTimerDisplay();
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    stopTimer();
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const display = document.getElementById('timer-display');
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            display.innerText = `${m}:${s}`;
+            
+            if (timeLeft <= 30) {
+                display.classList.add('low-time');
+            } else {
+                display.classList.remove('low-time');
+            }
+        }
+
+        function handleTimeUp() {
+            document.getElementById('game-over-msg').innerText = "Time's Up! The monster found you!";
+            document.getElementById('monster-screen').classList.add('active');
+        }
+
         function updateScoreboardUI() {
             document.getElementById('score-a').innerText = scores.A;
             document.getElementById('score-b').innerText = scores.B;
@@ -447,18 +511,15 @@
                 indicator.innerText = "Turn: TEAM A";
                 indicator.className = "text-xs bg-blue-900 px-2 py-1 rounded text-blue-200";
                 
-                // Visuals: A active, B inactive
                 playerAEl.classList.remove('inactive');
                 playerBEl.classList.add('inactive');
-                playerAEl.style.zIndex = 60; // Bring active to front
+                playerAEl.style.zIndex = 60; 
                 playerBEl.style.zIndex = 40;
-                
             } else {
                 boxA.classList.remove('active'); boxB.classList.add('active');
                 indicator.innerText = "Turn: TEAM B";
                 indicator.className = "text-xs bg-pink-900 px-2 py-1 rounded text-pink-200";
                 
-                // Visuals: B active, A inactive
                 playerBEl.classList.remove('inactive');
                 playerAEl.classList.add('inactive');
                 playerBEl.style.zIndex = 60; 
@@ -467,38 +528,40 @@
         }
 
         function endTurn(isWin) {
+            stopTimer();
             document.getElementById('monster-screen').classList.remove('active');
             document.getElementById('win-screen').classList.remove('active');
             
             if (isWin) scores[currentTurn]++;
             
-            // Switch Turn - Position is automatically preserved in teamA/teamB objects
             currentTurn = currentTurn === 'A' ? 'B' : 'A';
             
             updateScoreboardUI();
-            // IMPORTANT: Removed resetPosition() call here to maintain position
+            startTimer(); // Restart timer for next team
         }
 
         function retryTurn() {
+            // Restart timer for retry? Or just resume? Usually retry resets the attempt.
+            // Let's reset the timer to be fair (or maybe half time?). For simplicity, reset full time.
+            stopTimer();
             document.getElementById('monster-screen').classList.remove('active');
-            // Do not reset position on retry either, or reset to start of turn? 
-            // Standard behavior: Try again from current spot.
+            startTimer();
         }
 
         function resetScores() {
+            stopTimer();
             scores.A = 0; scores.B = 0; 
             currentTurn = 'A';
             
-            // Reset both teams to start
             teamA.x = 50; teamA.y = 90;
             teamB.x = 53; teamB.y = 90;
             updatePlayerVisuals();
             
             updateScoreboardUI(); 
+            startTimer();
         }
 
         function resetPosition() {
-            // Only resets the ACTIVE team
             let activeTeam = currentTurn === 'A' ? teamA : teamB;
             activeTeam.x = currentTurn === 'A' ? 50 : 53;
             activeTeam.y = 90;
@@ -522,11 +585,9 @@
             if (keysPressed['ArrowRight']) { activeTeam.x += speed; moved = true; }
 
             if (moved) {
-                // Bounds
                 if (activeTeam.x < 0) activeTeam.x = 0; if (activeTeam.x > 98) activeTeam.x = 98;
                 if (activeTeam.y < 0) activeTeam.y = 0; if (activeTeam.y > 96) activeTeam.y = 96;
                 
-                // Update DOM
                 activeTeam.el.style.left = activeTeam.x + "%";
                 activeTeam.el.style.top = activeTeam.y + "%";
             }
@@ -539,21 +600,22 @@
             
             if(!zone) return;
 
-            // Check ACTIVE player
             let activeTeam = currentTurn === 'A' ? teamA : teamB;
-            const pX = activeTeam.x + 3.3; // Center point (half of width 6.6)
-            const pY = activeTeam.y + 3.3; // Center point
+            const pX = activeTeam.x + 3.3; 
+            const pY = activeTeam.y + 3.3; 
 
-            // Tolerance buffer (allow standing near the building)
-            const buffer = 5.0; // 5% buffer around the zone
+            const buffer = 5.0; 
 
             const inX = pX >= (zone.l - buffer) && pX <= (zone.l + zone.w + buffer);
             const inY = pY >= (zone.t - buffer) && pY <= (zone.t + zone.h + buffer);
+
+            stopTimer(); // Pause timer while showing result
 
             if (inX && inY) {
                 document.getElementById('winner-name').innerText = `TEAM ${currentTurn}`;
                 document.getElementById('win-screen').classList.add('active');
             } else {
+                document.getElementById('game-over-msg').innerText = "Oh no! You have been kidnapped and taken to Cambodia!";
                 document.getElementById('monster-screen').classList.add('active');
             }
         }
@@ -597,6 +659,7 @@
         // Init
         updatePlayerVisuals();
         updateScoreboardUI();
+        startTimer(); // Start timer initially
         requestAnimationFrame(gameLoop);
 
     </script>
