@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survival Map: Complete Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #1a202c;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR --- */
+        #sidebar {
+            width: 300px;
+            background: #2d3748;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            border-right: 4px solid #4a5568;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+            z-index: 100;
+            overflow-y: auto;
+        }
+
+        /* --- MAIN AREA --- */
+        #main-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(#2d3748 1px, #1a202c 1px);
+            background-size: 20px 20px;
+            position: relative;
+            padding: 10px;
+        }
+
+        /* --- GAME CONTAINER (THE MAP) --- */
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 1600px;
+            aspect-ratio: 16/9;
+            background-color: #d1d5db; /* Lighter Road Color */
+            border: 8px solid #4a5568;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            user-select: none;
+        }
+
+        /* --- MAP BUILDINGS (CSS DRAWING) --- */
+        .building {
+            position: absolute;
+            border: 2px solid #4a5568;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 0.8vw;
+            font-weight: bold;
+            color: #2d3748;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            line-height: 1.2;
+        }
+        .building i { font-size: 1.5vw; margin-bottom: 2px; opacity: 0.7; }
+        .building:hover { transform: scale(1.02); z-index: 5; }
+
+        /* Types */
+        .b-commercial { background: #ffedd5; border-color: #c2410c; } /* Orange-ish */
+        .b-public { background: #fce7f3; border-color: #be185d; } /* Pink-ish */
+        .b-service { background: #dbeafe; border-color: #1d4ed8; } /* Blue-ish */
+        .b-park { background: #dcfce7; border-color: #15803d; color: #14532d; } /* Green */
+        .b-industrial { background: #f3f4f6; border-color: #4b5563; } /* Gray */
+        .b-transport { background: #fff; border-color: #374151; }
+
+        /* Specific Labels */
+        .label-sm { font-size: 0.6vw; }
+
+        /* Road Names */
+        .road-label {
+            position: absolute;
+            color: #6b7280;
+            font-weight: bold;
+            font-size: 1vw;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .road-v { transform: rotate(-90deg); transform-origin: center; }
+
+        /* --- PLAYER --- */
+        #player {
+            position: absolute;
+            width: 2.2%;
+            aspect-ratio: 1/1;
+            background-color: #2563eb;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #2563eb, 0 0 4px white;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: top 0.05s linear, left 0.05s linear;
+        }
+        #player i { font-size: 1.2vw; color: white; }
+
+        /* --- OVERLAYS --- */
+        .overlay-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        #monster-screen { background: rgba(0, 0, 0, 0.95); }
+        #win-screen { background: rgba(16, 185, 129, 0.9); }
+        .overlay-screen.active { opacity: 1; pointer-events: all; }
+
+        /* --- UI ELEMENTS --- */
+        .control-group { margin-bottom: 1rem; background: #4a5568; padding: 12px; border-radius: 10px; border: 1px solid #718096; }
+        .scoreboard { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+        .team-box { flex: 1; background: #1a202c; border-radius: 8px; padding: 8px; text-align: center; border: 2px solid transparent; opacity: 0.5; transition: all 0.3s; }
+        .team-box.active { opacity: 1; transform: scale(1.05); border-color: #ecc94b; box-shadow: 0 0 15px rgba(236, 201, 75, 0.3); }
+        .team-name { font-family: 'Press Start 2P'; font-size: 0.6rem; margin-bottom: 4px; color: #a0aec0; }
+        .team-score { font-family: 'Press Start 2P'; font-size: 1.2rem; color: white; }
+        
+        .mission-select { width: 100%; background: #edf2f7; color: #1a202c; padding: 10px; border-radius: 6px; font-weight: bold; border: 2px solid #cbd5e0; cursor: pointer; font-size: 0.9rem; }
+        .big-btn { width: 100%; padding: 12px; border-radius: 8px; font-family: 'Press Start 2P', cursive; text-transform: uppercase; cursor: pointer; transition: all 0.1s; border-bottom: 4px solid rgba(0,0,0,0.2); font-size: 0.8rem; text-align: center; }
+        .btn-confirm { background: #e53e3e; color: white; border-color: #9b2c2c; }
+        .btn-confirm:hover { background: #c53030; transform: translateY(-2px); }
+        .btn-confirm:active { transform: translateY(2px); border-bottom-width: 0; margin-top: 2px; }
+        .btn-reset { background: #4299e1; color: white; border-color: #2b6cb0; margin-top: 8px; font-size: 0.7rem; padding: 8px;}
+
+        /* Debug Highlight */
+        .building.highlight-debug { border: 3px dashed red !important; background: rgba(255,0,0,0.2) !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <div class="text-center mb-4">
+            <h1 class="text-lg font-bold text-yellow-400 font-['Press_Start_2P'] leading-relaxed">SURVIVAL<br>BATTLE</h1>
+        </div>
+
+        <div class="control-group border-l-4 border-purple-500">
+            <h3 class="text-gray-300 text-xs uppercase font-bold mb-2 tracking-wider flex justify-between">
+                <span>Scoreboard</span>
+                <button onclick="resetScores()" class="text-xs text-red-400 hover:text-red-300 underline">Reset</button>
+            </h3>
+            <div class="scoreboard">
+                <div id="box-a" class="team-box team-a active">
+                    <div class="team-name">TEAM A</div>
+                    <div id="score-a" class="team-score">0</div>
+                </div>
+                <div id="box-b" class="team-box team-b">
+                    <div class="team-name">TEAM B</div>
+                    <div id="score-b" class="team-score">0</div>
+                </div>
+            </div>
+            <div class="text-center mt-1">
+                <span class="text-xs bg-gray-700 px-2 py-1 rounded text-gray-300" id="turn-indicator">Turn: TEAM A</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3 class="text-gray-300 text-xs uppercase font-bold mb-2 tracking-wider">Destination</h3>
+            <select id="target-select" class="mission-select mb-3">
+                <optgroup label="Main Street / Square">
+                    <option value="factory">Factory</option>
+                    <option value="station">Station</option>
+                    <option value="library">Library</option>
+                    <option value="cafe">Cafe</option>
+                    <option value="main_square">Main Square</option>
+                    <option value="government_building">Gov. Building</option>
+                    <option value="post_office">Post Office</option>
+                    <option value="hotel">Hotel</option>
+                    <option value="theatre">Theatre</option>
+                </optgroup>
+                <optgroup label="Shopping Area">
+                    <option value="department_store">Department Store</option>
+                    <option value="supermarket">Supermarket</option>
+                    <option value="cinema">Cinema</option>
+                    <option value="car_park">Car Park</option>
+                    <option value="bank">Bank</option>
+                    <option value="book_shop">Book Shop</option>
+                    <option value="shopping_centre">Shopping Centre</option>
+                    <option value="shoe_shop">Shoe Shop</option>
+                    <option value="chemist">Chemist</option>
+                </optgroup>
+                <optgroup label="Recreation Area">
+                    <option value="central_park">Central Park</option>
+                    <option value="museum">Museum</option>
+                    <option value="stadium">Stadium</option>
+                    <option value="green_park">Green Park</option>
+                    <option value="swimming_pool">Swimming Pool</option>
+                    <option value="sports_centre">Sports Centre</option>
+                    <option value="bus_stop">Bus Stop</option>
+                </optgroup>
+            </select>
+            
+            <button onclick="checkLocation()" class="big-btn btn-confirm">
+                I AM HERE!
+            </button>
+            
+            <button onclick="resetPosition()" class="big-btn btn-reset">
+                Reset Position
+            </button>
+            
+            <div class="mt-3 text-center">
+                 <button onclick="toggleDebug()" id="debug-btn" class="text-xs text-gray-500 hover:text-white underline">Toggle Debug Mode</button>
+            </div>
+        </div>
+        
+        <div class="mt-auto text-center text-gray-500 text-xs p-2">
+            Use Arrow Keys to Move
+        </div>
+    </div>
+
+    <!-- Main Game Display -->
+    <div id="main-area">
+        <div id="game-container">
+            
+            <!-- Road Names -->
+            <div class="road-label road-v" style="top: 50%; left: 20%;">Station Road</div>
+            <div class="road-label road-v" style="top: 50%; left: 54%;">Park Avenue</div>
+            <div class="road-label road-v" style="top: 50%; left: 81%;">East Street</div>
+            <div class="road-label" style="top: 32%; left: 50%;">Central Street</div>
+            <div class="road-label" style="top: 61%; left: 35%;">Second Street</div>
+
+            <!-- --- BUILDINGS LEFT SIDE --- -->
+            <div class="building b-industrial" style="top: 10%; left: 3%; width: 7%; height: 80%;" title="factory">
+                <i class="fas fa-industry"></i><br>Factory
+            </div>
+            <div class="building b-transport" style="top: 10%; left: 11%; width: 6%; height: 80%;" title="station">
+                <i class="fas fa-train"></i><br>Station
+            </div>
+            <div style="position:absolute; top:35%; left:17%; font-size:0.7vw; color:#4b5563; font-weight:bold; transform:rotate(-90deg);">TAXI</div>
+
+            <!-- --- TOP ROW (Above Central Street) --- -->
+            <!-- Block 1 -->
+            <div class="building b-public" style="top: 5%; left: 24%; width: 10%; height: 23%; align-items: flex-start; padding:5px; background:#fff0e6;" title="library_block">
+                <!-- Library -->
+                <div class="building" style="top: 25%; left: 10%; width: 40%; height: 50%; border:none; background:transparent; box-shadow:none;" title="library">
+                    <i class="fas fa-book text-red-700"></i><br>Library
+                </div>
+                <!-- Cafe -->
+                <div class="building" style="top: 5%; left: 55%; width: 40%; height: 30%; border:1px solid #ccc; background:#fff;" title="cafe">
+                    <i class="fas fa-coffee"></i><br>Cafe
+                </div>
+                <!-- Main Square Text -->
+                <div style="position:absolute; bottom:15%; right:10%; font-size:0.8vw; color:#4b5563;" title="main_square">Main Square</div>
+            </div>
+
+            <!-- Block 2 -->
+            <div class="building b-public" style="top: 5%; left: 53%; width: 11%; height: 23%;" title="government_building">
+                <i class="fas fa-landmark text-red-800"></i><br>Gov.<br>Building
+            </div>
+            <div class="building b-service" style="top: 5%; left: 64%; width: 10%; height: 23%;" title="post_office">
+                <i class="fas fa-envelope text-blue-700"></i><br>Post<br>Office
+            </div>
+            <div class="building b-commercial" style="top: 5%; left: 74%; width: 7%; height: 23%;" title="hotel">
+                <i class="fas fa-hotel text-yellow-600"></i><br>Hotel
+            </div>
+            <div class="building b-commercial" style="top: 5%; left: 81%; width: 11%; height: 23%;" title="theatre">
+                <i class="fas fa-masks-theater"></i><br>Theatre
+            </div>
+
+            <!-- --- MIDDLE ROW (Between Central & Second St) --- -->
+            <!-- Shopping Block Left -->
+            <div style="position: absolute; top: 38%; left: 24%; width: 27%; height: 20%;">
+                <div class="building b-commercial" style="top: 0; left: 0; width: 40%; height: 50%;" title="department_store">
+                    <i class="fas fa-shirt"></i><br><span class="label-sm">Dept. Store</span>
+                </div>
+                <div class="building b-commercial" style="top: 50%; left: 0; width: 40%; height: 50%;" title="cinema">
+                    <i class="fas fa-film"></i><br>Cinema
+                </div>
+                <div class="building b-commercial" style="top: 0; left: 40%; width: 60%; height: 25%;" title="supermarket">
+                    <i class="fas fa-cart-shopping"></i><br><span class="label-sm">Supermarket</span>
+                </div>
+                <div class="building" style="top: 25%; left: 40%; width: 60%; height: 40%; background:#d1d5db;" title="car_park">
+                    <i class="fas fa-square-parking"></i><br>Car Park
+                </div>
+                <div class="building b-service" style="top: 65%; left: 40%; width: 30%; height: 35%;" title="bank">
+                    <i class="fas fa-money-bill"></i><br><span class="label-sm">Bank</span>
+                </div>
+                <div class="building b-commercial" style="top: 65%; left: 70%; width: 30%; height: 35%;" title="book_shop">
+                    <i class="fas fa-book-open"></i><br><span class="label-sm">Book Shop</span>
+                </div>
+            </div>
+
+            <!-- Shopping Block Right -->
+            <div style="position: absolute; top: 38%; left: 58%; width: 22%; height: 20%;">
+                <div class="building b-commercial" style="top: 25%; left: 0; width: 70%; height: 75%;" title="shopping_centre">
+                    <i class="fas fa-bag-shopping"></i><br>Shopping<br>Centre
+                </div>
+                <div class="building b-commercial" style="top: 0; left: 0; width: 25%; height: 25%;" title="sc_part1"></div>
+                <div class="building b-commercial" style="top: 0; left: 25%; width: 20%; height: 25%;" title="sc_part2"></div>
+                
+                <div class="building b-commercial" style="top: 0; left: 45%; width: 25%; height: 25%;" title="shoe_shop">
+                    <span class="label-sm">Shoe<br>Shop</span>
+                </div>
+                <div class="building b-commercial" style="top: 0; left: 70%; width: 30%; height: 25%;" title="chemist">
+                    <span class="label-sm">Chemist</span>
+                </div>
+                <div class="building b-commercial" style="top: 25%; left: 70%; width: 30%; height: 37%;" title="sc_part3"></div>
+                <div class="building b-commercial" style="top: 62%; left: 70%; width: 30%; height: 38%;" title="sc_part4"></div>
+            </div>
+
+            <!-- --- BOTTOM ROW --- -->
+            <!-- Central Park -->
+            <div class="building b-park" style="top: 66%; left: 24%; width: 27%; height: 32%; align-items: flex-start; padding: 10px;" title="central_park">
+                <div style="width: 100%; text-align: center; margin-bottom: 5px; font-weight:bold;">Central Park</div>
+                <i class="fas fa-tree" style="position: absolute; top: 10%; left: 10%;"></i>
+                <i class="fas fa-tree" style="position: absolute; top: 10%; right: 10%;"></i>
+                <i class="fas fa-tree" style="position: absolute; bottom: 10%; left: 10%;"></i>
+                <i class="fas fa-tree" style="position: absolute; bottom: 10%; right: 10%;"></i>
+                <!-- Museum -->
+                <div class="building b-public" style="position: relative; top: 10%; left: 15%; width: 70%; height: 40%; border-color: #be185d;" title="museum">
+                    <i class="fas fa-building-columns"></i><br>Museum
+                </div>
+            </div>
+
+            <!-- Stadium -->
+            <div style="position: absolute; top: 66%; left: 58%; width: 22%; height: 32%; background: white; border: 2px solid #ccc; display: flex; justify-content: center; align-items: center;">
+                <div class="building b-park" style="position: relative; width: 60%; height: 80%; border-radius: 40%; border: 4px solid #15803d; background: #86efac; display: flex; justify-content: center; align-items: center;" title="stadium">
+                    <div style="color: #14532d; font-weight: bold;">STADIUM</div>
+                </div>
+            </div>
+
+            <!-- Right Strip (East Street) -->
+            <div class="building b-park" style="top: 38%; left: 84%; width: 15%; height: 28%;" title="green_park">
+                <i class="fas fa-tree text-green-700"></i><br>Green<br>Park
+            </div>
+            <div style="position: absolute; top: 68%; left: 84%; width: 15%; height: 30%; border: 2px solid #4a5568; background: #fef3c7;">
+                <div class="building b-service" style="top: 0; left: 0; width: 100%; height: 30%; background: #bae6fd; border:none; border-bottom: 1px solid #ccc;" title="swimming_pool">
+                    <span class="label-sm">Swimming Pool</span>
+                </div>
+                <div class="building b-commercial" style="top: 30%; left: 0; width: 100%; height: 50%; background: transparent; border:none; box-shadow: none;" title="sports_centre">
+                    <i class="fas fa-basketball text-orange-600"></i><br><span class="label-sm">Sports Centre</span>
+                </div>
+                <div class="building" style="bottom: 0; left: 0; width: 100%; height: 20%; background: #e5e7eb; border-top: 2px solid #9ca3af; font-size: 0.7vw;" title="bus_stop">
+                    Bus Stop
+                </div>
+            </div>
+
+            <!-- Player -->
+            <div id="player" style="top: 90%; left: 52%;"><i class="fas fa-person"></i></div>
+
+            <!-- Monster Screen -->
+            <div id="monster-screen" class="overlay-screen">
+                <div class="text-9xl text-red-500 mb-4 animate-bounce"><i class="fas fa-skull-crossbones"></i></div>
+                <h2 class="text-4xl font-bold text-red-500 font-['Press_Start_2P'] mb-4 text-center leading-relaxed">GAME OVER</h2>
+                <p class="text-xl text-gray-300 mb-8 text-center px-4 max-w-lg">Oh no! You have been kidnapped and taken to Cambodia!</p>
+                <div class="flex gap-4">
+                     <button onclick="retryTurn()" class="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-gray-500">Retry</button>
+                    <button onclick="endTurn(false)" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-500 border-b-4 border-red-800">End Turn (Next Team)</button>
+                </div>
+            </div>
+
+            <!-- Win Screen -->
+            <div id="win-screen" class="overlay-screen">
+                <div class="text-9xl text-yellow-300 mb-4 animate-pulse"><i class="fas fa-star"></i></div>
+                <h2 class="text-5xl font-bold text-white font-['Press_Start_2P'] mb-4">CORRECT!</h2>
+                <p class="text-2xl text-white mb-8">Point for <span id="winner-name">TEAM</span>!</p>
+                <button onclick="endTurn(true)" class="bg-green-600 text-white font-bold py-4 px-8 rounded-full hover:bg-green-500 shadow-lg text-xl border-b-4 border-green-800 transition transform hover:scale-105">Collect Point & Next Turn</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA (Hitboxes) ---
+        const locations = {
+            "factory": { t: 10, l: 3, w: 7, h: 80 },
+            "station": { t: 10, l: 11, w: 6, h: 80 },
+            
+            // Top Row
+            "library": { t: 10, l: 26, w: 8, h: 10 },
+            "cafe": { t: 5, l: 45, w: 8, h: 10 },
+            "main_square": { t: 15, l: 36, w: 16, h: 12 }, // Approx area
+            "government_building": { t: 5, l: 53, w: 11, h: 23 },
+            "post_office": { t: 5, l: 64, w: 10, h: 23 },
+            "hotel": { t: 5, l: 74, w: 7, h: 23 },
+            "theatre": { t: 5, l: 81, w: 11, h: 23 },
+            
+            // Middle Left Block
+            "department_store": { t: 38, l: 24, w: 11, h: 10 },
+            "cinema": { t: 48, l: 24, w: 11, h: 10 },
+            "supermarket": { t: 38, l: 35, w: 16, h: 5 },
+            "car_park": { t: 43, l: 35, w: 16, h: 8 },
+            "bank": { t: 51, l: 35, w: 8, h: 7 },
+            "book_shop": { t: 51, l: 43, w: 8, h: 7 },
+            
+            // Middle Right Block
+            "shopping_centre": { t: 43, l: 58, w: 15, h: 15 },
+            "shoe_shop": { t: 38, l: 68, w: 5, h: 5 },
+            "chemist": { t: 38, l: 73, w: 7, h: 5 },
+            
+            // Bottom Row
+            "central_park": { t: 66, l: 24, w: 27, h: 32 },
+            "museum": { t: 70, l: 28, w: 19, h: 13 },
+            "stadium": { t: 66, l: 58, w: 22, h: 32 },
+            
+            // Right Strip
+            "green_park": { t: 38, l: 84, w: 15, h: 28 },
+            "swimming_pool": { t: 68, l: 84, w: 15, h: 9 },
+            "sports_centre": { t: 77, l: 84, w: 15, h: 15 },
+            "bus_stop": { t: 92, l: 84, w: 15, h: 6 }
+        };
+
+        // --- STATE ---
+        const player = document.getElementById('player');
+        let posX = 50; let posY = 90;
+        const speed = 0.5;
+        let keysPressed = {};
+        let scores = { A: 0, B: 0 };
+        let currentTurn = 'A';
+        let debugMode = false;
+        let animationFrameId;
+
+        // --- CORE FUNCTIONS ---
+        function updateScoreboardUI() {
+            document.getElementById('score-a').innerText = scores.A;
+            document.getElementById('score-b').innerText = scores.B;
+            
+            const boxA = document.getElementById('box-a');
+            const boxB = document.getElementById('box-b');
+            const indicator = document.getElementById('turn-indicator');
+
+            if (currentTurn === 'A') {
+                boxA.classList.add('active'); boxB.classList.remove('active');
+                indicator.innerText = "Turn: TEAM A";
+                indicator.className = "text-xs bg-blue-900 px-2 py-1 rounded text-blue-200";
+            } else {
+                boxA.classList.remove('active'); boxB.classList.add('active');
+                indicator.innerText = "Turn: TEAM B";
+                indicator.className = "text-xs bg-pink-900 px-2 py-1 rounded text-pink-200";
+            }
+        }
+
+        function endTurn(isWin) {
+            document.getElementById('monster-screen').classList.remove('active');
+            document.getElementById('win-screen').classList.remove('active');
+            if (isWin) scores[currentTurn]++;
+            currentTurn = currentTurn === 'A' ? 'B' : 'A';
+            updateScoreboardUI();
+            resetPosition();
+        }
+
+        function retryTurn() {
+            document.getElementById('monster-screen').classList.remove('active');
+            resetPosition();
+        }
+
+        function resetScores() {
+            scores.A = 0; scores.B = 0; currentTurn = 'A';
+            updateScoreboardUI(); resetPosition();
+        }
+
+        function gameLoop() {
+            let moved = false;
+            if (keysPressed['ArrowUp']) { posY -= speed; moved = true; }
+            if (keysPressed['ArrowDown']) { posY += speed; moved = true; }
+            if (keysPressed['ArrowLeft']) { posX -= speed; moved = true; }
+            if (keysPressed['ArrowRight']) { posX += speed; moved = true; }
+
+            if (moved) {
+                // Bounds
+                if (posX < 0) posX = 0; if (posX > 98) posX = 98;
+                if (posY < 0) posY = 0; if (posY > 96) posY = 96;
+                
+                player.style.left = posX + "%";
+                player.style.top = posY + "%";
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function checkLocation() {
+            const targetName = document.getElementById('target-select').value;
+            const zone = locations[targetName];
+            
+            if(!zone) {
+                console.error("Zone not defined for:", targetName);
+                return;
+            }
+
+            const pX = posX + 1.1; 
+            const pY = posY + 1.1;
+
+            const inX = pX >= zone.l && pX <= (zone.l + zone.w);
+            const inY = pY >= zone.t && pY <= (zone.t + zone.h);
+
+            if (inX && inY) {
+                document.getElementById('winner-name').innerText = `TEAM ${currentTurn}`;
+                document.getElementById('win-screen').classList.add('active');
+            } else {
+                document.getElementById('monster-screen').classList.add('active');
+            }
+        }
+
+        function resetPosition() {
+            posX = 50; posY = 90;
+            player.style.left = posX + "%";
+            player.style.top = posY + "%";
+            keysPressed = {};
+        }
+
+        function toggleDebug() {
+            debugMode = !debugMode;
+            document.querySelectorAll('.building, .debug-zone').forEach(el => {
+                el.classList.remove('highlight-debug');
+            });
+            
+            if (debugMode) {
+                const targetName = document.getElementById('target-select').value;
+                highlightTarget(targetName);
+            }
+            
+            const btn = document.getElementById('debug-btn');
+            btn.innerText = debugMode ? "Debug: ON" : "Toggle Debug Mode";
+            btn.style.color = debugMode ? "#86efac" : "#6b7280";
+        }
+
+        function highlightTarget(val) {
+            // Try finding by title first
+            const el = document.querySelector(`.building[title="${val}"]`);
+            if(el) {
+                el.classList.add('highlight-debug');
+            } else {
+                // For zones without direct building div (like main_square), visualize hitbox
+                // This part is tricky without creating new divs, so we rely on console or predefined divs
+            }
+        }
+
+        // --- INPUT ---
+        document.addEventListener('keydown', (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault(); keysPressed[e.key] = true;
+            }
+            if (e.key === 'Enter') checkLocation();
+        });
+        document.addEventListener('keyup', (e) => {
+            if (keysPressed[e.key]) delete keysPressed[e.key];
+        });
+        
+        // Listener for select change to update debug highlight
+        document.getElementById('target-select').addEventListener('change', (e) => {
+            if(debugMode) {
+                document.querySelectorAll('.highlight-debug').forEach(el => el.classList.remove('highlight-debug'));
+                highlightTarget(e.target.value);
+            }
+        });
+
+        // Init
+        updateScoreboardUI();
+        requestAnimationFrame(gameLoop);
+
+    </script>
+</body>
+</html>
