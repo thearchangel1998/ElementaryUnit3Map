@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survival Map: Complete Version</title>
+    <title>Survival Map: Team Racing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -44,13 +44,13 @@
             padding: 10px;
         }
 
-        /* --- GAME CONTAINER (THE MAP) --- */
+        /* --- GAME CONTAINER --- */
         #game-container {
             position: relative;
             width: 100%;
             max-width: 1600px;
             aspect-ratio: 16/9;
-            background-color: #d1d5db; /* Lighter Road Color */
+            background-color: #d1d5db; 
             border: 8px solid #4a5568;
             border-radius: 12px;
             box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
@@ -58,7 +58,7 @@
             user-select: none;
         }
 
-        /* --- MAP BUILDINGS (CSS DRAWING) --- */
+        /* --- BUILDINGS --- */
         .building {
             position: absolute;
             border: 2px solid #4a5568;
@@ -67,57 +67,61 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            font-size: 0.8vw;
+            font-size: 0.9vw;
             font-weight: bold;
             color: #2d3748;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
             transition: transform 0.2s;
             line-height: 1.2;
         }
-        .building i { font-size: 1.5vw; margin-bottom: 2px; opacity: 0.7; }
+        .building i { font-size: 1.8vw; margin-bottom: 2px; opacity: 0.7; }
         .building:hover { transform: scale(1.02); z-index: 5; }
 
-        /* Types */
-        .b-commercial { background: #ffedd5; border-color: #c2410c; } /* Orange-ish */
-        .b-public { background: #fce7f3; border-color: #be185d; } /* Pink-ish */
-        .b-service { background: #dbeafe; border-color: #1d4ed8; } /* Blue-ish */
-        .b-park { background: #dcfce7; border-color: #15803d; color: #14532d; } /* Green */
-        .b-industrial { background: #f3f4f6; border-color: #4b5563; } /* Gray */
+        /* Building Colors */
+        .b-commercial { background: #ffedd5; border-color: #c2410c; }
+        .b-public { background: #fce7f3; border-color: #be185d; }
+        .b-service { background: #dbeafe; border-color: #1d4ed8; }
+        .b-park { background: #dcfce7; border-color: #15803d; color: #14532d; }
+        .b-industrial { background: #f3f4f6; border-color: #4b5563; }
         .b-transport { background: #fff; border-color: #374151; }
 
-        /* Specific Labels */
-        .label-sm { font-size: 0.6vw; }
+        .label-sm { font-size: 0.7vw; }
 
         /* Road Names */
         .road-label {
-            position: absolute;
-            color: #6b7280;
-            font-weight: bold;
-            font-size: 1vw;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            pointer-events: none;
-            white-space: nowrap;
+            position: absolute; color: #6b7280; font-weight: bold; font-size: 1.1vw;
+            letter-spacing: 2px; text-transform: uppercase; pointer-events: none;
         }
         .road-v { transform: rotate(-90deg); transform-origin: center; }
 
-        /* --- PLAYER --- */
-        #player {
+        /* --- PLAYERS --- */
+        .player-token {
             position: absolute;
-            width: 2.2%;
+            width: 6.6%;
             aspect-ratio: 1/1;
-            background-color: #2563eb;
-            border: 2px solid white;
+            border: 3px solid white;
             border-radius: 50%;
-            box-shadow: 0 0 10px #2563eb, 0 0 4px white;
-            transform: translate(-50%, -50%);
-            z-index: 50;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: top 0.05s linear, left 0.05s linear;
+            transition: top 0.05s linear, left 0.05s linear, opacity 0.3s, filter 0.3s;
+            z-index: 50;
         }
-        #player i { font-size: 1.2vw; color: white; }
+        .player-token i { font-size: 3.6vw; color: white; }
+        
+        /* Team A Specifics */
+        #player-a { background-color: #2563eb; box-shadow: 0 0 15px #2563eb; }
+        
+        /* Team B Specifics */
+        #player-b { background-color: #db2777; box-shadow: 0 0 15px #db2777; }
+
+        /* Inactive State */
+        .player-token.inactive {
+            opacity: 0.6;
+            filter: grayscale(0.8);
+            z-index: 40;
+            transform: scale(0.9);
+        }
 
         /* --- OVERLAYS --- */
         .overlay-screen {
@@ -137,8 +141,16 @@
         .control-group { margin-bottom: 1rem; background: #4a5568; padding: 12px; border-radius: 10px; border: 1px solid #718096; }
         .scoreboard { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
         .team-box { flex: 1; background: #1a202c; border-radius: 8px; padding: 8px; text-align: center; border: 2px solid transparent; opacity: 0.5; transition: all 0.3s; }
-        .team-box.active { opacity: 1; transform: scale(1.05); border-color: #ecc94b; box-shadow: 0 0 15px rgba(236, 201, 75, 0.3); }
-        .team-name { font-family: 'Press Start 2P'; font-size: 0.6rem; margin-bottom: 4px; color: #a0aec0; }
+        
+        /* Team A Active UI */
+        .team-box.team-a.active { opacity: 1; transform: scale(1.05); border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); }
+        .team-a .team-name { color: #93c5fd; }
+        
+        /* Team B Active UI */
+        .team-box.team-b.active { opacity: 1; transform: scale(1.05); border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); }
+        .team-b .team-name { color: #f9a8d4; }
+
+        .team-name { font-family: 'Press Start 2P'; font-size: 0.6rem; margin-bottom: 4px; }
         .team-score { font-family: 'Press Start 2P'; font-size: 1.2rem; color: white; }
         
         .mission-select { width: 100%; background: #edf2f7; color: #1a202c; padding: 10px; border-radius: 6px; font-weight: bold; border: 2px solid #cbd5e0; cursor: pointer; font-size: 0.9rem; }
@@ -157,22 +169,24 @@
     <!-- Sidebar -->
     <div id="sidebar">
         <div class="text-center mb-4">
-            <h1 class="text-lg font-bold text-yellow-400 font-['Press_Start_2P'] leading-relaxed">SURVIVAL<br>BATTLE</h1>
+            <h1 class="text-lg font-bold text-yellow-400 font-['Press_Start_2P'] leading-relaxed">SURVIVAL<br>RACING</h1>
         </div>
 
         <div class="control-group border-l-4 border-purple-500">
             <h3 class="text-gray-300 text-xs uppercase font-bold mb-2 tracking-wider flex justify-between">
                 <span>Scoreboard</span>
-                <button onclick="resetScores()" class="text-xs text-red-400 hover:text-red-300 underline">Reset</button>
+                <button onclick="resetScores()" class="text-xs text-red-400 hover:text-red-300 underline">Reset Match</button>
             </h3>
             <div class="scoreboard">
                 <div id="box-a" class="team-box team-a active">
                     <div class="team-name">TEAM A</div>
                     <div id="score-a" class="team-score">0</div>
+                    <div class="text-xs text-blue-300 mt-1"><i class="fas fa-user-astronaut"></i></div>
                 </div>
                 <div id="box-b" class="team-box team-b">
                     <div class="team-name">TEAM B</div>
                     <div id="score-b" class="team-score">0</div>
+                    <div class="text-xs text-pink-300 mt-1"><i class="fas fa-user-ninja"></i></div>
                 </div>
             </div>
             <div class="text-center mt-1">
@@ -221,7 +235,7 @@
             </button>
             
             <button onclick="resetPosition()" class="big-btn btn-reset">
-                Reset Position
+                Reset Current Team to Start
             </button>
             
             <div class="mt-3 text-center">
@@ -245,7 +259,8 @@
             <div class="road-label" style="top: 32%; left: 50%;">Central Street</div>
             <div class="road-label" style="top: 61%; left: 35%;">Second Street</div>
 
-            <!-- --- BUILDINGS LEFT SIDE --- -->
+            <!-- --- BUILDINGS --- -->
+            <!-- Left Side -->
             <div class="building b-industrial" style="top: 10%; left: 3%; width: 7%; height: 80%;" title="factory">
                 <i class="fas fa-industry"></i><br>Factory
             </div>
@@ -254,22 +269,16 @@
             </div>
             <div style="position:absolute; top:35%; left:17%; font-size:0.7vw; color:#4b5563; font-weight:bold; transform:rotate(-90deg);">TAXI</div>
 
-            <!-- --- TOP ROW (Above Central Street) --- -->
-            <!-- Block 1 -->
+            <!-- Top Row -->
             <div class="building b-public" style="top: 5%; left: 24%; width: 10%; height: 23%; align-items: flex-start; padding:5px; background:#fff0e6;" title="library_block">
-                <!-- Library -->
                 <div class="building" style="top: 25%; left: 10%; width: 40%; height: 50%; border:none; background:transparent; box-shadow:none;" title="library">
                     <i class="fas fa-book text-red-700"></i><br>Library
                 </div>
-                <!-- Cafe -->
                 <div class="building" style="top: 5%; left: 55%; width: 40%; height: 30%; border:1px solid #ccc; background:#fff;" title="cafe">
                     <i class="fas fa-coffee"></i><br>Cafe
                 </div>
-                <!-- Main Square Text -->
                 <div style="position:absolute; bottom:15%; right:10%; font-size:0.8vw; color:#4b5563;" title="main_square">Main Square</div>
             </div>
-
-            <!-- Block 2 -->
             <div class="building b-public" style="top: 5%; left: 53%; width: 11%; height: 23%;" title="government_building">
                 <i class="fas fa-landmark text-red-800"></i><br>Gov.<br>Building
             </div>
@@ -283,8 +292,7 @@
                 <i class="fas fa-masks-theater"></i><br>Theatre
             </div>
 
-            <!-- --- MIDDLE ROW (Between Central & Second St) --- -->
-            <!-- Shopping Block Left -->
+            <!-- Middle Row -->
             <div style="position: absolute; top: 38%; left: 24%; width: 27%; height: 20%;">
                 <div class="building b-commercial" style="top: 0; left: 0; width: 40%; height: 50%;" title="department_store">
                     <i class="fas fa-shirt"></i><br><span class="label-sm">Dept. Store</span>
@@ -306,7 +314,6 @@
                 </div>
             </div>
 
-            <!-- Shopping Block Right -->
             <div style="position: absolute; top: 38%; left: 58%; width: 22%; height: 20%;">
                 <div class="building b-commercial" style="top: 25%; left: 0; width: 70%; height: 75%;" title="shopping_centre">
                     <i class="fas fa-bag-shopping"></i><br>Shopping<br>Centre
@@ -324,28 +331,24 @@
                 <div class="building b-commercial" style="top: 62%; left: 70%; width: 30%; height: 38%;" title="sc_part4"></div>
             </div>
 
-            <!-- --- BOTTOM ROW --- -->
-            <!-- Central Park -->
+            <!-- Bottom Row -->
             <div class="building b-park" style="top: 66%; left: 24%; width: 27%; height: 32%; align-items: flex-start; padding: 10px;" title="central_park">
                 <div style="width: 100%; text-align: center; margin-bottom: 5px; font-weight:bold;">Central Park</div>
                 <i class="fas fa-tree" style="position: absolute; top: 10%; left: 10%;"></i>
                 <i class="fas fa-tree" style="position: absolute; top: 10%; right: 10%;"></i>
                 <i class="fas fa-tree" style="position: absolute; bottom: 10%; left: 10%;"></i>
                 <i class="fas fa-tree" style="position: absolute; bottom: 10%; right: 10%;"></i>
-                <!-- Museum -->
                 <div class="building b-public" style="position: relative; top: 10%; left: 15%; width: 70%; height: 40%; border-color: #be185d;" title="museum">
                     <i class="fas fa-building-columns"></i><br>Museum
                 </div>
             </div>
 
-            <!-- Stadium -->
             <div style="position: absolute; top: 66%; left: 58%; width: 22%; height: 32%; background: white; border: 2px solid #ccc; display: flex; justify-content: center; align-items: center;">
                 <div class="building b-park" style="position: relative; width: 60%; height: 80%; border-radius: 40%; border: 4px solid #15803d; background: #86efac; display: flex; justify-content: center; align-items: center;" title="stadium">
                     <div style="color: #14532d; font-weight: bold;">STADIUM</div>
                 </div>
             </div>
 
-            <!-- Right Strip (East Street) -->
             <div class="building b-park" style="top: 38%; left: 84%; width: 15%; height: 28%;" title="green_park">
                 <i class="fas fa-tree text-green-700"></i><br>Green<br>Park
             </div>
@@ -361,8 +364,9 @@
                 </div>
             </div>
 
-            <!-- Player -->
-            <div id="player" style="top: 90%; left: 52%;"><i class="fas fa-person"></i></div>
+            <!-- Players (Two distinct elements) -->
+            <div id="player-a" class="player-token"><i class="fas fa-user-astronaut"></i></div>
+            <div id="player-b" class="player-token inactive"><i class="fas fa-user-ninja"></i></div>
 
             <!-- Monster Screen -->
             <div id="monster-screen" class="overlay-screen">
@@ -386,39 +390,29 @@
     </div>
 
     <script>
-        // --- DATA (Hitboxes) ---
+        // --- DATA ---
         const locations = {
             "factory": { t: 10, l: 3, w: 7, h: 80 },
             "station": { t: 10, l: 11, w: 6, h: 80 },
-            
-            // Top Row
             "library": { t: 10, l: 26, w: 8, h: 10 },
             "cafe": { t: 5, l: 45, w: 8, h: 10 },
-            "main_square": { t: 15, l: 36, w: 16, h: 12 }, // Approx area
+            "main_square": { t: 15, l: 36, w: 16, h: 12 },
             "government_building": { t: 5, l: 53, w: 11, h: 23 },
             "post_office": { t: 5, l: 64, w: 10, h: 23 },
             "hotel": { t: 5, l: 74, w: 7, h: 23 },
             "theatre": { t: 5, l: 81, w: 11, h: 23 },
-            
-            // Middle Left Block
             "department_store": { t: 38, l: 24, w: 11, h: 10 },
             "cinema": { t: 48, l: 24, w: 11, h: 10 },
             "supermarket": { t: 38, l: 35, w: 16, h: 5 },
             "car_park": { t: 43, l: 35, w: 16, h: 8 },
             "bank": { t: 51, l: 35, w: 8, h: 7 },
             "book_shop": { t: 51, l: 43, w: 8, h: 7 },
-            
-            // Middle Right Block
             "shopping_centre": { t: 43, l: 58, w: 15, h: 15 },
             "shoe_shop": { t: 38, l: 68, w: 5, h: 5 },
             "chemist": { t: 38, l: 73, w: 7, h: 5 },
-            
-            // Bottom Row
             "central_park": { t: 66, l: 24, w: 27, h: 32 },
             "museum": { t: 70, l: 28, w: 19, h: 13 },
             "stadium": { t: 66, l: 58, w: 22, h: 32 },
-            
-            // Right Strip
             "green_park": { t: 38, l: 84, w: 15, h: 28 },
             "swimming_pool": { t: 68, l: 84, w: 15, h: 9 },
             "sports_centre": { t: 77, l: 84, w: 15, h: 15 },
@@ -426,12 +420,14 @@
         };
 
         // --- STATE ---
-        const player = document.getElementById('player');
-        let posX = 50; let posY = 90;
+        // Separate state for each team
+        let teamA = { x: 50, y: 90, el: document.getElementById('player-a') };
+        let teamB = { x: 53, y: 90, el: document.getElementById('player-b') }; // Offset start
+        
+        let currentTurn = 'A';
         const speed = 0.5;
         let keysPressed = {};
         let scores = { A: 0, B: 0 };
-        let currentTurn = 'A';
         let debugMode = false;
         let animationFrameId;
 
@@ -443,51 +439,96 @@
             const boxA = document.getElementById('box-a');
             const boxB = document.getElementById('box-b');
             const indicator = document.getElementById('turn-indicator');
+            const playerAEl = teamA.el;
+            const playerBEl = teamB.el;
 
             if (currentTurn === 'A') {
                 boxA.classList.add('active'); boxB.classList.remove('active');
                 indicator.innerText = "Turn: TEAM A";
                 indicator.className = "text-xs bg-blue-900 px-2 py-1 rounded text-blue-200";
+                
+                // Visuals: A active, B inactive
+                playerAEl.classList.remove('inactive');
+                playerBEl.classList.add('inactive');
+                playerAEl.style.zIndex = 60; // Bring active to front
+                playerBEl.style.zIndex = 40;
+                
             } else {
                 boxA.classList.remove('active'); boxB.classList.add('active');
                 indicator.innerText = "Turn: TEAM B";
                 indicator.className = "text-xs bg-pink-900 px-2 py-1 rounded text-pink-200";
+                
+                // Visuals: B active, A inactive
+                playerBEl.classList.remove('inactive');
+                playerAEl.classList.add('inactive');
+                playerBEl.style.zIndex = 60; 
+                playerAEl.style.zIndex = 40;
             }
         }
 
         function endTurn(isWin) {
             document.getElementById('monster-screen').classList.remove('active');
             document.getElementById('win-screen').classList.remove('active');
+            
             if (isWin) scores[currentTurn]++;
+            
+            // Switch Turn - Position is automatically preserved in teamA/teamB objects
             currentTurn = currentTurn === 'A' ? 'B' : 'A';
+            
             updateScoreboardUI();
-            resetPosition();
+            // IMPORTANT: Removed resetPosition() call here to maintain position
         }
 
         function retryTurn() {
             document.getElementById('monster-screen').classList.remove('active');
-            resetPosition();
+            // Do not reset position on retry either, or reset to start of turn? 
+            // Standard behavior: Try again from current spot.
         }
 
         function resetScores() {
-            scores.A = 0; scores.B = 0; currentTurn = 'A';
-            updateScoreboardUI(); resetPosition();
+            scores.A = 0; scores.B = 0; 
+            currentTurn = 'A';
+            
+            // Reset both teams to start
+            teamA.x = 50; teamA.y = 90;
+            teamB.x = 53; teamB.y = 90;
+            updatePlayerVisuals();
+            
+            updateScoreboardUI(); 
+        }
+
+        function resetPosition() {
+            // Only resets the ACTIVE team
+            let activeTeam = currentTurn === 'A' ? teamA : teamB;
+            activeTeam.x = currentTurn === 'A' ? 50 : 53;
+            activeTeam.y = 90;
+            updatePlayerVisuals();
+        }
+
+        function updatePlayerVisuals() {
+            teamA.el.style.left = teamA.x + "%";
+            teamA.el.style.top = teamA.y + "%";
+            teamB.el.style.left = teamB.x + "%";
+            teamB.el.style.top = teamB.y + "%";
         }
 
         function gameLoop() {
+            let activeTeam = currentTurn === 'A' ? teamA : teamB;
             let moved = false;
-            if (keysPressed['ArrowUp']) { posY -= speed; moved = true; }
-            if (keysPressed['ArrowDown']) { posY += speed; moved = true; }
-            if (keysPressed['ArrowLeft']) { posX -= speed; moved = true; }
-            if (keysPressed['ArrowRight']) { posX += speed; moved = true; }
+            
+            if (keysPressed['ArrowUp']) { activeTeam.y -= speed; moved = true; }
+            if (keysPressed['ArrowDown']) { activeTeam.y += speed; moved = true; }
+            if (keysPressed['ArrowLeft']) { activeTeam.x -= speed; moved = true; }
+            if (keysPressed['ArrowRight']) { activeTeam.x += speed; moved = true; }
 
             if (moved) {
                 // Bounds
-                if (posX < 0) posX = 0; if (posX > 98) posX = 98;
-                if (posY < 0) posY = 0; if (posY > 96) posY = 96;
+                if (activeTeam.x < 0) activeTeam.x = 0; if (activeTeam.x > 98) activeTeam.x = 98;
+                if (activeTeam.y < 0) activeTeam.y = 0; if (activeTeam.y > 96) activeTeam.y = 96;
                 
-                player.style.left = posX + "%";
-                player.style.top = posY + "%";
+                // Update DOM
+                activeTeam.el.style.left = activeTeam.x + "%";
+                activeTeam.el.style.top = activeTeam.y + "%";
             }
             requestAnimationFrame(gameLoop);
         }
@@ -496,13 +537,12 @@
             const targetName = document.getElementById('target-select').value;
             const zone = locations[targetName];
             
-            if(!zone) {
-                console.error("Zone not defined for:", targetName);
-                return;
-            }
+            if(!zone) return;
 
-            const pX = posX + 1.1; 
-            const pY = posY + 1.1;
+            // Check ACTIVE player
+            let activeTeam = currentTurn === 'A' ? teamA : teamB;
+            const pX = activeTeam.x + 3.3; // Center point (half of width 6.6)
+            const pY = activeTeam.y + 3.3; // Center point
 
             const inX = pX >= zone.l && pX <= (zone.l + zone.w);
             const inY = pY >= zone.t && pY <= (zone.t + zone.h);
@@ -515,38 +555,21 @@
             }
         }
 
-        function resetPosition() {
-            posX = 50; posY = 90;
-            player.style.left = posX + "%";
-            player.style.top = posY + "%";
-            keysPressed = {};
-        }
-
         function toggleDebug() {
             debugMode = !debugMode;
-            document.querySelectorAll('.building, .debug-zone').forEach(el => {
+            document.querySelectorAll('.building').forEach(el => {
                 el.classList.remove('highlight-debug');
             });
             
             if (debugMode) {
                 const targetName = document.getElementById('target-select').value;
-                highlightTarget(targetName);
+                const el = document.querySelector(`.building[title="${targetName}"]`);
+                if(el) el.classList.add('highlight-debug');
             }
             
             const btn = document.getElementById('debug-btn');
             btn.innerText = debugMode ? "Debug: ON" : "Toggle Debug Mode";
             btn.style.color = debugMode ? "#86efac" : "#6b7280";
-        }
-
-        function highlightTarget(val) {
-            // Try finding by title first
-            const el = document.querySelector(`.building[title="${val}"]`);
-            if(el) {
-                el.classList.add('highlight-debug');
-            } else {
-                // For zones without direct building div (like main_square), visualize hitbox
-                // This part is tricky without creating new divs, so we rely on console or predefined divs
-            }
         }
 
         // --- INPUT ---
@@ -560,15 +583,16 @@
             if (keysPressed[e.key]) delete keysPressed[e.key];
         });
         
-        // Listener for select change to update debug highlight
         document.getElementById('target-select').addEventListener('change', (e) => {
             if(debugMode) {
                 document.querySelectorAll('.highlight-debug').forEach(el => el.classList.remove('highlight-debug'));
-                highlightTarget(e.target.value);
+                const el = document.querySelector(`.building[title="${e.target.value}"]`);
+                if(el) el.classList.add('highlight-debug');
             }
         });
 
         // Init
+        updatePlayerVisuals();
         updateScoreboardUI();
         requestAnimationFrame(gameLoop);
 
