@@ -544,8 +544,11 @@
             const pX = activeTeam.x + 3.3; // Center point (half of width 6.6)
             const pY = activeTeam.y + 3.3; // Center point
 
-            const inX = pX >= zone.l && pX <= (zone.l + zone.w);
-            const inY = pY >= zone.t && pY <= (zone.t + zone.h);
+            // Tolerance buffer (allow standing near the building)
+            const buffer = 5.0; // 5% buffer around the zone
+
+            const inX = pX >= (zone.l - buffer) && pX <= (zone.l + zone.w + buffer);
+            const inY = pY >= (zone.t - buffer) && pY <= (zone.t + zone.h + buffer);
 
             if (inX && inY) {
                 document.getElementById('winner-name').innerText = `TEAM ${currentTurn}`;
